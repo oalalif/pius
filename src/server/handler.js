@@ -1,35 +1,72 @@
+const storeData = require("../services/storeData");
 const predictClassification = require("../services/inferenceService");
 const crypto = require("crypto");
-const storeData = require("../services/storeData");
+const loadAllData = require("../services/loadData");
+const InputError = require("../exceptions/InputError");
 
 async function postPredictHandler(request, h) {
-  const { image } = request.payload;
-  const { model } = request.server.app;
+  try {
+    const { image } = request.payload;
+    const { model } = request.server.app;
 
-  const { confidenceScore, label, explanation, suggestion } =
-    await predictClassification(model, image);
-  const id = crypto.randomUUID();
-  const createdAt = new Date().toISOString();
+    const { label, suggestion } = await predictClassification(model, image);
+    const id = crypto.randomUUID();
+    const createdAt = new Date().toISOString();
 
-  const data = {
-    id: id,
-    result: label,
-    explanation: explanation,
-    suggestion: suggestion,
-    confidenceScore: confidenceScore,
-    createdAt: createdAt,
-  };
-  await storeData(id, data);
-  const response = h.response({
-    status: "success",
-    message:
-      confidenceScore > 99
-        ? "Model is predicted successfully."
-        : "Model is predicted successfully but under threshold. Please use the correct picture",
-    data,
-  });
-  response.code(201);
-  return response;
+    const data = {
+      id: id,
+      result: label,
+      suggestion: suggestion,
+      createdAt: createdAt,
+    };
+
+    await storeData(id, data);
+
+    const response = h.response({
+      status: "success",
+      message: "Model is predicted successfully", // Mengubah pesan respons sesuai dengan yang diharapkan
+      data,
+    });
+    response.code(201);
+    return response;
+  } catch (error) {
+    if (error instanceof InputError) {
+      return h
+        .response({
+          status: "failed",
+          message: error.message,
+        })
+        .code(error.statusCode);
+    } else {
+      console.error("An unexpected error occurred:", error);
+      return h
+        .response({
+          status: "failed",
+          message: "An unexpected error occurred",
+        })
+        .code(500);
+    }
+  }
 }
 
-module.exports = postPredictHandler;
+async function getAllDataHandler(request, h) {
+  try {
+    const allData = await loadAllData();
+    const response = h.response({
+      status: "success",
+      data: allData,
+    });
+    response.code(200);
+    return response;
+  } catch (error) {
+    console.error("An unexpected error occurred:", error);
+    return h
+      .response({
+        status: "failed",
+        message: "An unexpected error occurred",
+      })
+      .code(500);
+  }
+}
+
+module.exports = { postPredictHandler, getAllDataHandler };

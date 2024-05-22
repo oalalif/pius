@@ -1,6 +1,7 @@
 require("dotenv").config();
+
 const Hapi = require("@hapi/hapi");
-const routes = require("../server/routes");
+const routes = require("./routes");
 const loadModel = require("../services/loadModel");
 const InputError = require("../exceptions/InputError");
 
@@ -11,6 +12,9 @@ const InputError = require("../exceptions/InputError");
     routes: {
       cors: {
         origin: ["*"],
+      },
+      payload: {
+        maxBytes: 1000000,
       },
     },
   });
@@ -26,19 +30,23 @@ const InputError = require("../exceptions/InputError");
     if (response instanceof InputError) {
       const newResponse = h.response({
         status: "fail",
-        message: `${response.message} Silakan gunakan foto lain.`,
+        message: "Terjadi kesalahan dalam melakukan prediksi",
       });
       newResponse.code(response.statusCode);
       return newResponse;
     }
 
     if (response.isBoom) {
-      const newResponse = h.response({
-        status: "fail",
-        message: response.message,
-      });
-      newResponse.code(response.output.statusCode);
-      return newResponse;
+      //cek size image
+      if (response.output.statusCode === 413) {
+        const newResponse = h.response({
+          status: "fail",
+          message:
+            "Payload content length greater than maximum allowed: 1000000",
+        });
+        newResponse.code(413);
+        return newResponse;
+      }
     }
 
     return h.continue;
