@@ -1,5 +1,5 @@
 // backend/src/routes.js
-const handler = require('./handlers');
+const handler = require('./handler');
 
 const routes = [
   {
