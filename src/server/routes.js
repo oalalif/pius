@@ -1,4 +1,3 @@
-// backend/src/routes.js
 const handler = require('./handler');
 
 const routes = [
@@ -8,17 +7,17 @@ const routes = [
     options: {
       payload: {
         maxBytes: 1000000, // 1MB limit for uploads
-        output: 'stream',  // Outputs data as a stream, useful for handling large files
-        parse: true,       // Automatically parse the incoming request
-        multipart: true,   // Allows multipart form data, e.g., file uploads
+        output: 'stream',
+        parse: true,
+        multipart: true,
       },
     },
-    handler: handler.predict, // Updated handler reference
+    handler: handler.postPredictHandler, // Use the correct handler function name
   },
   {
     method: 'GET',
     path: '/predict/histories',
-    handler: handler.getHistories, // Updated handler reference
+    handler: handler.getHistoriesHandler, // Use the correct handler function name
   },
 ];
 
