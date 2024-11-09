@@ -9,7 +9,7 @@
     "start": "node ./src/server/server.js"
   },
   "keywords": [],
-  "author": "",
+  "author": "Fatahillah Alif Pangaribowo",
   "license": "ISC",
   "dependencies": {
     "@google-cloud/firestore": "^7.7.0",

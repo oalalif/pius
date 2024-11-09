@@ -7,7 +7,7 @@ const InputError = require('../exceptions/InputError');
 
 const createServer = async () => {
   const server = Hapi.server({
-    port: process.env.PORT || 8080,
+    port: process.env.PORT || 8080, 
     host: '0.0.0.0',
     routes: {
       cors: {
@@ -39,7 +39,16 @@ const createServer = async () => {
     return h.continue;
   });
 
+  // Start the server
+  await server.start();
+  console.log(`Server running on ${server.info.uri}`);
+
   return server;
 };
+
+createServer().catch((err) => {
+  console.error('Failed to start server:', err);
+  process.exit(1);
+});
 
 module.exports = createServer;
