@@ -10,15 +10,17 @@ const routes = [
         output: 'stream',
         parse: true,
         multipart: true,
+        allow: 'multipart/form-data', // Add allow multipart/form-data
       },
     },
-    handler: handler.postPredictHandler, // Use the correct handler function name
+    handler: handler.postPredictHandler,
   },
   {
     method: 'GET',
     path: '/predict/histories',
-    handler: handler.getHistoriesHandler, // Use the correct handler function name
+    handler: handler.getHistoriesHandler,
   },
 ];
 
 module.exports = routes;
+
