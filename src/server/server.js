@@ -12,16 +12,18 @@ const createServer = async () => {
     await tf.ready();
 
     const server = Hapi.server({
-        port: config.port,
-        host: config.host,
+        port: 8080,
+        host: "0.0.0.0",
         routes: {
-            cors: config.cors,
+            cors: {
+                origin: ['*'],
+              },
             payload: {
                 maxBytes: 1000000, // 1MB sesuai kriteria
                 timeout: 30000,
                 multipart: true,
                 output: 'stream'
-            }
+            },
         },
     });
 
