@@ -1,32 +1,35 @@
-const tf = require("@tensorflow/tfjs-node");
-const InputError = require("../exceptions/InputError");
+// src/services/inferenceService.js
+const tf = require('@tensorflow/tfjs-node');
+const InputError = require('../exceptions/InputError');
 
-async function predictClassification(model, image) {
+async function predictClassification(model, imageBuffer) {
   try {
-    const tensor = tf.node
-      .decodeJpeg(image)
-      .resizeNearestNeighbor([224, 224])
-      .expandDims()
-      .toFloat();
-
-    const prediction = model.predict(tensor);
-    const score = (await prediction.data())[0]; // Ambil nilai probabilitas kelas pertama
-    const confidenceScore = score * 100; // Confidence score dalam persen
-
-    const classes = ["Cancer", "Non-cancer"];
-    const classResult = confidenceScore > 50 ? 0 : 1;
-    const label = classes[classResult];
-
-    let suggestion;
-    if (label === "Cancer") {
-      suggestion = "Kamu terindikasi Cancer, Segera ke dokter!";
-    } else {
-      suggestion = "Kamu tidak terindikasi Cancer, Kamu Sehat!";
+    if (!model || !imageBuffer) {
+      throw new InputError('Invalid input parameters');
     }
 
-    return { label, suggestion };
+    const tensor = tf.node
+      .decodeJpeg(new Uint8Array(imageBuffer), 3)
+      .resizeNearestNeighbor([224, 224])
+      .expandDims()
+      .toFloat()
+      .div(255.0);
+
+    const prediction = await model.predict(tensor).data();
+    const confidenceScore = prediction[0] * 100;
+
+    const threshold = 50;
+    const label = confidenceScore > threshold ? 'Cancer' : 'Non-cancer';
+    const suggestion = label === 'Cancer' 
+      ? 'Segera konsultasi dengan dokter untuk pemeriksaan lebih lanjut.'
+      : 'Anda terlihat sehat. Tetap jaga kesehatan kulit Anda.';
+
+    tensor.dispose();
+
+    return { label, suggestion, confidenceScore: parseFloat(confidenceScore.toFixed(2)) };
   } catch (error) {
-    throw new InputError("Terjadi kesalahan dalam melakukan prediksi", 400);
+    console.error('Prediction error:', error);
+    throw new InputError('Gagal melakukan prediksi gambar');
   }
 }
 

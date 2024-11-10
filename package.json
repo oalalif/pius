@@ -1,22 +1,19 @@
 {
-    "name": "submission-mlgc-alfian",
+    "name": "skin-cancer-detection-api",
     "version": "1.0.0",
-    "description": "",
-    "main": "index.js",
+    "description": "API for skin cancer detection using TensorFlow.js",
+    "main": "src/server/server.js",
     "scripts": {
-        "start": "node ./src/server/server.js",
-        "test": "echo \"Error: no test specified\" && exit 1"
+      "start": "node src/server/server.js",
+      "dev": "nodemon src/server/server.js"
     },
-    "keywords": [],
-    "author": "",
-    "license": "ISC",
     "dependencies": {
-        "@google-cloud/firestore": "^7.7.0",
-        "@hapi/hapi": "^21.3.9",
-        "@tensorflow/tfjs-node": "^4.19.0",
-        "dotenv": "^16.4.5"
+      "@google-cloud/firestore": "^7.1.0",
+      "@hapi/hapi": "^21.3.2",
+      "@tensorflow/tfjs-node": "^4.10.0",
+      "dotenv": "^16.3.1"
     },
     "devDependencies": {
-        "nodemon": "^3.1.0"
+      "nodemon": "^3.0.1"
     }
-}
+  }

@@ -1,72 +1,55 @@
-const storeData = require("../services/storeData");
-const predictClassification = require("../services/inferenceService");
-const crypto = require("crypto");
-const loadAllData = require("../services/loadData");
-const InputError = require("../exceptions/InputError");
+// src/server/handler.js
+const firestoreService = require('../services/firestoreService');
+const predictClassification = require('../services/inferenceService');
+const InputError = require('../exceptions/InputError');
+const crypto = require('crypto');
 
-async function postPredictHandler(request, h) {
+const postPredictHandler = async (request, h) => {
   try {
     const { image } = request.payload;
     const { model } = request.server.app;
 
-    const { label, suggestion } = await predictClassification(model, image);
+    if (!image) {
+      throw new InputError('Image is required');
+    }
+
+    const result = await predictClassification(model, image);
     const id = crypto.randomUUID();
-    const createdAt = new Date().toISOString();
+    const timestamp = new Date().toISOString();
 
     const data = {
-      id: id,
-      result: label,
-      suggestion: suggestion,
-      createdAt: createdAt,
+      id,
+      ...result,
+      createdAt: timestamp
     };
 
-    await storeData(id, data);
+    await firestoreService.storeData(id, data);
 
-    const response = h.response({
-      status: "success",
-      message: "Model is predicted successfully", // Mengubah pesan respons sesuai dengan yang diharapkan
-      data,
-    });
-    response.code(201);
-    return response;
+    return h.response({
+      status: 'success',
+      message: 'Prediksi berhasil dilakukan',
+      data
+    }).code(201);
   } catch (error) {
     if (error instanceof InputError) {
-      return h
-        .response({
-          status: "failed",
-          message: error.message,
-        })
-        .code(error.statusCode);
-    } else {
-      console.error("An unexpected error occurred:", error);
-      return h
-        .response({
-          status: "failed",
-          message: "An unexpected error occurred",
-        })
-        .code(500);
+      throw error;
     }
+    console.error('Handler error:', error);
+    throw new Error('Terjadi kesalahan pada server');
   }
-}
+};
 
-async function getAllDataHandler(request, h) {
+const getHistoryHandler = async (request, h) => {
   try {
-    const allData = await loadAllData();
-    const response = h.response({
-      status: "success",
-      data: allData,
-    });
-    response.code(200);
-    return response;
+    const histories = await firestoreService.getAllData();
+    return h.response({
+      status: 'success',
+      data: histories
+    }).code(200);
   } catch (error) {
-    console.error("An unexpected error occurred:", error);
-    return h
-      .response({
-        status: "failed",
-        message: "An unexpected error occurred",
-      })
-      .code(500);
+    console.error('History fetch error:', error);
+    throw new Error('Gagal mengambil riwayat');
   }
-}
+};
 
-module.exports = { postPredictHandler, getAllDataHandler };
+module.exports = { postPredictHandler, getHistoryHandler };
