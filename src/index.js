@@ -1,4 +1,5 @@
-// backend/src/index.js
+// src/index.js
+require('dotenv').config();
 const config = require('./config');
 const createServer = require('./server/server');
 
@@ -7,12 +8,13 @@ const init = async () => {
     
     try {
         await server.start();
-        console.log(`Server running on http://localhost:${config.port}`);
+        console.log(`Server running on ${server.info.uri}`);
         console.log('Server Configuration:', {
             projectId: config.projectId,
             bucketName: config.bucketName,
             collectionName: config.collectionName,
-            environment: process.env.NODE_ENV || 'development'
+            environment: process.env.NODE_ENV || 'development',
+            modelPath: config.modelPath
         });
         
         // Handle shutdown gracefully
@@ -21,11 +23,13 @@ const init = async () => {
             await server.stop();
             process.exit(0);
         });
+
+        process.on('unhandledRejection', (err) => {
+            console.error('Unhandled rejection:', err);
+            process.exit(1);
+        });
     } catch (err) {
         console.error('Failed to start server:', err);
         process.exit(1);
     }
 };
-
-// Run the server
-init();

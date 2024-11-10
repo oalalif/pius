@@ -1,38 +1,43 @@
-// src/services/inferenceService.js
 const tf = require('@tensorflow/tfjs-node');
 const InputError = require('../exceptions/InputError');
 
-async function predictClassification(model, image) {
-    if (!model || !image) {
-        throw new InputError('Invalid input parameters');
+async function predictClassification(model, imageBuffer) {
+    if (!model) {
+        throw new InputError('Model not initialized');
+    }
+
+    if (!imageBuffer || !(imageBuffer instanceof Buffer)) {
+        throw new InputError('Invalid image data. Please provide a valid image file.');
     }
 
     try {
-        const tensor = tf.node
-            .decodeJpeg(image)
-            .resizeNearestNeighbor([224, 224])
-            .expandDims()
-            .toFloat();
+        // Convert buffer to Uint8Array
+        const uint8Array = new Uint8Array(imageBuffer);
+        
+        // Decode and preprocess image
+        const imageTensor = tf.node.decodeImage(uint8Array, 3);
+        const resizedImage = tf.image.resizeBilinear(imageTensor, [224, 224]);
+        const normalizedImage = resizedImage.div(255.0);
+        const batchedImage = normalizedImage.expandDims(0);
 
-        const prediction = await model.predict(tensor);
-        const score = await prediction.data();
-        const confidenceScore = Math.max(...score) * 100;
+        // Run prediction
+        const prediction = await model.predict(batchedImage);
+        const probabilities = await prediction.data();
+        
+        // Calculate confidence score and determine result
+        const confidenceScore = Math.max(...probabilities);
+        const result = confidenceScore > 0.5 ? 'Cancer' : 'Non-cancer';
+        const suggestion = result === 'Cancer' 
+            ? "Segera periksa ke dokter!"
+            : "Penyakit kanker tidak terdeteksi.";
 
-        let label, suggestion;
+        // Cleanup tensors
+        tf.dispose([imageTensor, resizedImage, normalizedImage, batchedImage, prediction]);
 
-        if (confidenceScore > 50) {
-            label = 'Cancer';
-            suggestion = "Segera konsultasi dengan dokter terdekat untuk pemeriksaan lebih lanjut.";
-        } else {
-            label = 'Non-cancer';
-            suggestion = "Tetap jaga kesehatan kulit dan hindari paparan sinar UV secara berlebihan.";
-        }
-
-        // Cleanup
-        tensor.dispose();
-        prediction.dispose();
-
-        return { confidenceScore, label, suggestion };
+        return {
+            result,
+            suggestion
+        };
     } catch (error) {
         console.error('Prediction error:', error);
         throw new InputError('Terjadi kesalahan dalam melakukan prediksi');

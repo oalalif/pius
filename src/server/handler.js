@@ -1,7 +1,6 @@
 // src/server/handler.js
-const { storeData, getHistories } = require("../services/firestore-service");
+const { storeData } = require("../services/firestore-service");
 const predictClassification = require("../services/inferenceService");
-const crypto = require('crypto');
 const InputError = require('../exceptions/InputError');
 
 const postPredictHandler = async (request, h) => {
@@ -14,27 +13,31 @@ const postPredictHandler = async (request, h) => {
         }
 
         if (!image) {
-            throw new InputError('Image is required');
+            throw new InputError('Image file is required');
         }
 
-        const { confidenceScore, label, suggestion } = await predictClassification(model, image);
+        // Get image buffer
+        const buffer = await new Promise((resolve, reject) => {
+            const chunks = [];
+            image.on('data', (chunk) => chunks.push(chunk));
+            image.on('end', () => resolve(Buffer.concat(chunks)));
+            image.on('error', reject);
+        });
 
-        const id = crypto.randomUUID();
-        const createdAt = new Date().toISOString();
-
+        const prediction = await predictClassification(model, buffer);
+        
         const data = {
-            id,
-            result: label,
-            suggestion,
-            confidenceScore,
-            createdAt
+            id: require('crypto').randomUUID(),
+            ...prediction,
+            createdAt: new Date().toISOString()
         };
 
-        await storeData(id, data);
+        // Store prediction in Firestore
+        await storeData(data.id, data);
 
         return h.response({
             status: 'success',
-            message: 'Prediction completed successfully',
+            message: 'Model is predicted successfully',
             data
         }).code(201);
     } catch (error) {
@@ -42,22 +45,8 @@ const postPredictHandler = async (request, h) => {
             throw error;
         }
         console.error('Prediction error:', error);
-        throw new Error('Failed to process prediction');
+        throw new Error('Terjadi kesalahan dalam melakukan prediksi');
     }
 };
 
-const getHistoriesHandler = async (request, h) => {
-    try {
-        const predictions = await getHistories();
-        return h.response({
-            status: 'success',
-            data: predictions
-        }).code(200);
-    } catch (error) {
-        console.error('Get histories error:', error);
-        throw new Error('Failed to retrieve histories');
-    }
-};
-
-module.exports = { postPredictHandler, getHistoriesHandler };
-
+module.exports = { postPredictHandler };
