@@ -1,28 +1,21 @@
-require('dotenv').config();
+// src/services/loadModel.js
 const tf = require('@tensorflow/tfjs-node');
+const config = require('../config');
+const { Storage } = require('@google-cloud/storage');
 
 async function loadModel() {
     try {
-        const modelPath = process.env.MODEL_PATH;
+        // Inisialisasi Google Cloud Storage
+        const storage = new Storage();
+        const bucket = storage.bucket(config.bucketName);
         
-        // Check if MODEL_PATH is set in environment variables
-        if (!modelPath) {
-            throw new Error('MODEL_PATH is not defined in environment variables.');
-        }
-
-        console.log(`Attempting to load model from: ${modelPath}`);
-        
-        // Attempt to load the model
-        const model = await tf.loadGraphModel(modelPath);
-        
-        console.log('Model loaded successfully');
+        // Load model dari Cloud Storage
+        const model = await tf.loadLayersModel(config.modelPath);
+        console.log('Model loaded successfully from Cloud Storage');
         return model;
     } catch (error) {
-        // Log the specific error details
-        console.error('Error loading model:', error.message);
-        
-        // Throw a more general error for further handling
-        throw new Error('Failed to load model from MODEL_PATH.');
+        console.error('Error loading model:', error);
+        throw error;
     }
 }
 

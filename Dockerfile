@@ -1,21 +1,11 @@
-FROM node:18-slim
+FROM node:18.16
 
-# Install required dependencies for tfjs-node
-RUN apt-get update && apt-get install -y \
-    python3 \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
-
-# Set working directory
 WORKDIR /app
 
-# Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install --production
+RUN npm install
 
-# Copy source code
 COPY . .
 
 # Set environment variables
