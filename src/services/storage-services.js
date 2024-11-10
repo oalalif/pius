@@ -1,6 +1,6 @@
 // backend/src/services/storage-service.js
 const { Storage } = require('@google-cloud/storage');
-const config = require('../config');
+const config = require('../config/index');
 
 class StorageService {
   constructor() {

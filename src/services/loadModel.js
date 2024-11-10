@@ -1,6 +1,6 @@
 // src/services/loadModel.js
 const tf = require('@tensorflow/tfjs-node');
-const config = require('../config');
+const config = require('../config/index');
 const { Storage } = require('@google-cloud/storage');
 
 async function loadModel() {

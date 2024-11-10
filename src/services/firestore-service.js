@@ -1,6 +1,6 @@
 // src/services/firestore-service.js
 const { Firestore } = require('@google-cloud/firestore');
-const config = require('../config');
+const config = require('../config/index');
 
 const firestore = new Firestore({
     projectId: config.projectId,
