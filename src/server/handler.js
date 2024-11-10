@@ -1,55 +1,57 @@
 // src/server/handler.js
-const firestoreService = require('../services/firestoreService');
-const predictClassification = require('../services/inferenceService');
-const InputError = require('../exceptions/InputError');
-const crypto = require('crypto');
+const storeData = require("../services/storeData");
+const predictClassification = require("../services/inferenceService");
+const crypto = require("crypto");
+const loadAllData = require("../services/loadData");
+const InputError = require("../exceptions/InputError");
 
-const postPredictHandler = async (request, h) => {
+async function postPredictHandler(request, h) {
   try {
     const { image } = request.payload;
     const { model } = request.server.app;
 
     if (!image) {
-      throw new InputError('Image is required');
+      throw new InputError("Image is required");
     }
 
-    const result = await predictClassification(model, image);
+    const { label, suggestion } = await predictClassification(model, image);
     const id = crypto.randomUUID();
-    const timestamp = new Date().toISOString();
+    const createdAt = new Date().toISOString();
 
     const data = {
       id,
-      ...result,
-      createdAt: timestamp
+      result: label,
+      suggestion,
+      createdAt,
     };
 
-    await firestoreService.storeData(id, data);
+    await storeData(id, data);
 
     return h.response({
-      status: 'success',
-      message: 'Prediksi berhasil dilakukan',
-      data
+      status: "success",
+      message: "Model is predicted successfully",
+      data,
     }).code(201);
   } catch (error) {
     if (error instanceof InputError) {
       throw error;
     }
-    console.error('Handler error:', error);
-    throw new Error('Terjadi kesalahan pada server');
+    console.error("Prediction error:", error);
+    throw new Error("Failed to process prediction");
   }
-};
+}
 
-const getHistoryHandler = async (request, h) => {
+async function getAllDataHandler(request, h) {
   try {
-    const histories = await firestoreService.getAllData();
+    const allData = await loadAllData();
     return h.response({
-      status: 'success',
-      data: histories
+      status: "success",
+      data: allData,
     }).code(200);
   } catch (error) {
-    console.error('History fetch error:', error);
-    throw new Error('Gagal mengambil riwayat');
+    console.error("Get histories error:", error);
+    throw new Error("Failed to retrieve histories");
   }
-};
+}
 
-module.exports = { postPredictHandler, getHistoryHandler };
+module.exports = { postPredictHandler, getAllDataHandler };

@@ -1,35 +1,34 @@
 // src/services/inferenceService.js
-const tf = require('@tensorflow/tfjs-node');
-const InputError = require('../exceptions/InputError');
+const tf = require("@tensorflow/tfjs-node");
+const InputError = require("../exceptions/InputError");
 
-async function predictClassification(model, imageBuffer) {
+async function predictClassification(model, image) {
   try {
-    if (!model || !imageBuffer) {
-      throw new InputError('Invalid input parameters');
-    }
-
     const tensor = tf.node
-      .decodeJpeg(new Uint8Array(imageBuffer), 3)
+      .decodeJpeg(image)
       .resizeNearestNeighbor([224, 224])
       .expandDims()
-      .toFloat()
-      .div(255.0);
+      .toFloat();
 
-    const prediction = await model.predict(tensor).data();
-    const confidenceScore = prediction[0] * 100;
+    const prediction = model.predict(tensor);
+    const score = (await prediction.data())[0];
+    const confidenceScore = score * 100;
 
-    const threshold = 50;
-    const label = confidenceScore > threshold ? 'Cancer' : 'Non-cancer';
-    const suggestion = label === 'Cancer' 
-      ? 'Segera konsultasi dengan dokter untuk pemeriksaan lebih lanjut.'
-      : 'Anda terlihat sehat. Tetap jaga kesehatan kulit Anda.';
+    const classes = ["Cancer", "Non-cancer"];
+    const classResult = confidenceScore > 50 ? 0 : 1;
+    const label = classes[classResult];
 
+    const suggestion = label === "Cancer" 
+      ? "Kamu terindikasi Cancer, Segera ke dokter!"
+      : "Kamu tidak terindikasi Cancer, Kamu Sehat!";
+
+    // Cleanup
     tensor.dispose();
+    prediction.dispose();
 
-    return { label, suggestion, confidenceScore: parseFloat(confidenceScore.toFixed(2)) };
+    return { label, suggestion };
   } catch (error) {
-    console.error('Prediction error:', error);
-    throw new InputError('Gagal melakukan prediksi gambar');
+    throw new InputError("Terjadi kesalahan dalam melakukan prediksi");
   }
 }
 
